@@ -80,9 +80,9 @@ inc_mutex(void *arg __attribute__((unused)))
     int i;
 
     for (i = 0; i < INC_ITERATIONS; i++) {
-        /* TODO: Protect access to the shared variable counter with a mutex lock
-         * inside the loop. */
+        pthread_mutex_lock(&mutex);
         counter += INCREMENT;
+        pthread_mutex_unlock(&mutex);
     }
 
     return NULL;
@@ -97,7 +97,9 @@ dec_mutex(void *arg __attribute__((unused)))
     for (i = 0; i < DEC_ITERATIONS; i++) {
         /* TODO: Protect access to the shared variable counter with a mutex lock
          * inside the loop. */
+        pthread_mutex_lock(&mutex);
         counter -= DECREMENT;
+        pthread_mutex_unlock(&mutex);
     }
 
     return NULL;
@@ -110,9 +112,13 @@ dec_mutex(void *arg __attribute__((unused)))
 
 void spin_lock() {
     /* TODO: Implement the lock operation for a test-and-set spinlock. */
+    while (__sync_lock_test_and_set(&lock, true)) {
+    }
+    
 }
 
 void spin_unlock() {
+    __sync_lock_test_and_set(&lock, false);
     /* TODO: Implement the unlock operation for a test-and-set spinlock. */
 }
 
@@ -123,8 +129,10 @@ inc_tas_spinlock(void *arg __attribute__((unused)))
     int i;
 
     for (i = 0; i < INC_ITERATIONS; i++) {
+        spin_lock();
         /* TODO: Add the spin_lock() and spin_unlock() operations inside the loop. */
         counter += INCREMENT;
+        spin_unlock();
     }
 
     return NULL;
@@ -137,8 +145,10 @@ dec_tas_spinlock(void *arg __attribute__((unused)))
     int i;
 
     for (i = 0; i < DEC_ITERATIONS; i++) {
+        spin_lock();
         /* TODO: Add the spin_lock() and spin_unlock() operations inside the loop. */
         counter -= DECREMENT;
+        spin_unlock();
     }
 
     return NULL;
@@ -157,8 +167,7 @@ inc_atomic(void *arg __attribute__((unused)))
 
     for (i = 0; i < INC_ITERATIONS; i++) {
         /* TODO: Use atomic addition to increment the shared counter */
-
-        counter += INCREMENT; // You need to replace this.
+        __sync_fetch_and_add(&counter, INCREMENT);
     }
 
     return NULL;
@@ -172,8 +181,7 @@ dec_atomic(void *arg __attribute__((unused)))
 
     for (i = 0; i < DEC_ITERATIONS; i++) {
         /* TODO: Use atomic subtraction to increment the shared counter */
-
-        counter -= DECREMENT; // You need to replace this.
+        __sync_fetch_and_sub(&counter, DECREMENT);
     }
 
     return NULL;
