@@ -22,7 +22,7 @@ void *thread() {
 
 int main(void) {
   pthread_t tid;
-  sem = psem_init(0);
+  sem = psem_init(3);
 
   if (pthread_create(&tid, NULL, thread, NULL) != 0) {
     perror("pthread_create()");
