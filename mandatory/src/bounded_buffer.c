@@ -11,20 +11,25 @@
 #include <pthread.h>        // pthread_...
 
 void buffer_init(buffer_t *buffer, int size) {
-
   // Allocate the buffer array.
-  tuple_t *array = malloc(size*sizeof(tuple_t));
+  tuple_t *array = malloc(size*sizeof(tuple_t)); 
+  buffer->array=array; //Actually point the allocated array.
 
   if (array == NULL) {
     perror("Could not allocate buffer array");
     exit(EXIT_FAILURE);
- }
+  }
 
   // Initialize the binary mutex semaphore.
   buffer->mutex = psem_init(1);
 
-  // TODO: initialize the rest of the buffer struct members.
+  buffer->size = size; // Setting size of buffer into what we revieced as argument
+  buffer->in = 0;
+  buffer->out = 0;
 
+  //These I am not 100% sure about, but it passes tests
+  buffer->data = psem_init(0);
+  buffer->empty = psem_init(size);
 }
 
 void buffer_destroy(buffer_t *buffer) {
