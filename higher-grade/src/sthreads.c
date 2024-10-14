@@ -35,6 +35,7 @@ static ucontext_t scheduler_ctx;
 static size_t list_size;
 static size_t term_amount;
 static int new_tid = 0;
+static int sleep_time = 0;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 /*******************************************************************************
@@ -89,7 +90,7 @@ thread_t *shuffle_for_ready() {
    while (true)
    {
       printf("Looking at %d\n", head->tid);
-      sleep(2);
+      sleep(sleep_time);
       if(head->state == ready){
          return head;
       }
@@ -161,7 +162,7 @@ void eliminator() {
    while(true) {
       head->state = terminated;
       term_amount++;
-      printf("I killed thread %d!\n", end->tid);
+      printf("I killed thread %d!\n", head->tid);
       if (swapcontext(&eliminator_ctx, &scheduler_ctx) < 0) {
          perror("swapcontext eliminator failed\n");
          exit(EXIT_FAILURE);
@@ -211,6 +212,8 @@ void yield() {
    }
 }
 
-void done() {}
+void done() {
+   setcontext(&eliminator_ctx);
+}
 
 tid_t join(tid_t thread) { return -1; }
