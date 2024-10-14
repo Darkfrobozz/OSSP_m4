@@ -36,6 +36,10 @@ static size_t list_size;
 static size_t term_amount;
 static int new_tid = 0;
 static int sleep_time = 0;
+
+// set up array with indexes being tid
+static int tid_array_length;
+static thread_t **tid_arr;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 /*******************************************************************************
@@ -91,6 +95,11 @@ thread_t *shuffle_for_ready() {
    {
       printf("Looking at %d\n", head->tid);
       sleep(sleep_time);
+      if (head->state == waiting 
+          && head->join_tid >= 0 
+          && tid_arr[head->join_tid]->state == terminated) {
+         head->state = ready;
+      }
       if(head->state == ready){
          return head;
       }
@@ -177,6 +186,7 @@ void eliminator() {
 ********************************************************************************/
 
 int init(void (*start)()) {
+   tid_arr = calloc(sizeof(thread_t), 32);
    init_context0(&scheduler_ctx, scheduler, NULL); 
    init_context0(&eliminator_ctx, eliminator, &scheduler_ctx); 
    // Get the main thread in
@@ -194,17 +204,24 @@ tid_t spawn(void (*start)()) {
       return -1;
    }
    new_thread->tid = new_tid;
+   // Adding to TID array
+   if (new_tid >= tid_array_length) {
+      tid_array_length = 2 * tid_array_length;
+      tid_arr = realloc(tid_arr, tid_array_length);
+   }
+   tid_arr[new_tid] = new_thread;
+   
+   // Incrementing tid
    new_tid++;
    new_thread->state = ready;
+   new_thread->join_tid = -1;
    init_context0(&new_thread->ctx, start, &eliminator_ctx);
    add_to_ready_list(new_thread);
    printf("Current list after add:\n");
    print_contexts();
    return new_tid;
 }
-
-void yield() {
-   head->state = ready;
+void switch_to_scheduler() {
    move_to_back();
    if(swapcontext(&end->ctx, &scheduler_ctx) > 0) {
       perror("swapcontext eliminator failed\n");
@@ -212,8 +229,26 @@ void yield() {
    }
 }
 
+void yield() {
+   head->state = ready;
+   switch_to_scheduler();
+}
+
 void done() {
    setcontext(&eliminator_ctx);
 }
 
-tid_t join(tid_t thread) { return -1; }
+tid_t join(tid_t thread) { 
+   // check not out of bounds, TID thread exists.
+   // State is not terminated and it is not the calling thread
+   if (thread >= tid_array_length 
+       && !tid_arr[thread]
+       && tid_arr[thread]->state == terminated
+       && thread == head->tid) {
+      return -1; 
+   }
+   head->state = waiting;
+   head->join_tid = thread;
+   switch_to_scheduler();
+   return thread;
+}

@@ -25,10 +25,11 @@ typedef struct thread thread_t;
    this to your own liking.
 */
 struct thread {
-  tid_t tid;
-  state_t state;
-  ucontext_t ctx;
-  thread_t *next; /* can use this to create a linked list of threads */
+   tid_t join_tid;
+   tid_t tid;
+   state_t state;
+   ucontext_t ctx;
+   thread_t *next; /* can use this to create a linked list of threads */
 };
 
 /*******************************************************************************

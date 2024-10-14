@@ -126,8 +126,10 @@ void magic_numbers() {
 ********************************************************************************/
 
 void main_context() {
-  spawn(numbers);
-  spawn(letters);
+  int a = spawn(numbers);
+  int b = spawn(letters);
+  join(a);
+  join(b);
   puts("\n==== End of main ====\n");
 }
 
