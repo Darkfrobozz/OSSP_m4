@@ -125,10 +125,16 @@ void magic_numbers() {
             Here you should add code to test the Simple Threads API.
 ********************************************************************************/
 
+void main_context() {
+  spawn(numbers);
+  spawn(letters);
+  puts("\n==== End of main ====\n");
+}
 
 int main(){
   puts("\n==== Test program for the Simple Threads API ====\n");
 
-  init(); // Initialization
-  puts("\n==== End of main ====\n");
+  init(main_context); // Initialization
+  perror("Wrong place");
 }
+

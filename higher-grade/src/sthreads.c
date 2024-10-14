@@ -38,6 +38,21 @@ static int new_tid = 0;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 /*******************************************************************************
+                             Print result
+
+                      Add internal helper functions here.
+********************************************************************************/
+void print_contexts() {
+   thread_t *start = head;
+   int element = 0;
+   while (start) {
+      printf("element: %d, tid: %d\n", element, start->tid);
+      start = start->next;
+      element++;
+   }
+}
+
+/*******************************************************************************
                              Auxiliary functions
 
                       Add internal helper functions here.
@@ -52,6 +67,7 @@ void add_to_ready_list(thread_t *thread) {
    if (list_size > 0) {
       thread->next = NULL;
       end->next = thread;
+      end = thread;
    } else {
       head = thread;
       end = thread;
@@ -72,7 +88,7 @@ thread_t *shuffle_for_ready() {
    
    while (true)
    {
-      printf("Looking at %d\n", end->tid);
+      printf("Looking at %d\n", head->tid);
       sleep(2);
       if(head->state == ready){
          return head;
@@ -126,13 +142,14 @@ void init_context0(ucontext_t *ctx, void (*func)(), ucontext_t *next) {
 
 void scheduler() {
    while(true) {
-      printf("Looking for next ready\n");
       if(list_size <= term_amount) {
+         printf("No more threads in action\n");
          exit(0);
       }
+      printf("Looking for next ready\n");
       thread_t *result = shuffle_for_ready();
       result->state = running;
-      printf("Found thread, %d", result->tid);
+      printf("Found thread, %d\n", result->tid);
       if (swapcontext(&scheduler_ctx, &result->ctx) < 0 ) {
          perror("swapcontext into work thread failed\n");
          exit(EXIT_FAILURE);
@@ -144,7 +161,7 @@ void eliminator() {
    while(true) {
       head->state = terminated;
       term_amount++;
-      printf("I killed a thread! %d\n", end->tid);
+      printf("I killed thread %d!\n", end->tid);
       if (swapcontext(&eliminator_ctx, &scheduler_ctx) < 0) {
          perror("swapcontext eliminator failed\n");
          exit(EXIT_FAILURE);
@@ -153,32 +170,21 @@ void eliminator() {
 }
 
 
-/*******************************************************************************
-                             Print result
-
-                      Add internal helper functions here.
-********************************************************************************/
-void print_contexts() {
-   thread_t *start = head;
-   int element = 0;
-   while (start) {
-      printf("element: %d, tid: %d\n", element, start->tid);
-      start = start->next;
-      element++;
-   }
-}
 
 /*******************************************************************************
                     Implementation of the Simple Threads API
 ********************************************************************************/
 
-int init() {
+int init(void (*start)()) {
    init_context0(&scheduler_ctx, scheduler, NULL); 
    init_context0(&eliminator_ctx, eliminator, &scheduler_ctx); 
    // Get the main thread in
-   spawn(NULL);
-   head = end;
-   return 1;   // On success
+   spawn(start);
+   if(setcontext(&scheduler_ctx) > 0) {
+      perror("setcontext to scheduler failed\n");
+      exit(EXIT_FAILURE);
+   }
+   return -1;   // On fail
 }
 
 tid_t spawn(void (*start)()) {
