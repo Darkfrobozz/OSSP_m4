@@ -49,8 +49,14 @@ void add_to_ready_list(thread_t *thread) {
    if (!thread) {             //Handle cases when the thread dont exists
       return; 
    }
-   thread->next = NULL;
-   end->next = thread;
+   if (list_size > 0) {
+      thread->next = NULL;
+      end->next = thread;
+   } else {
+      head = thread;
+      end = thread;
+   }
+   list_size++;
 }
 void move_to_back() {
       end->next = head;
@@ -154,9 +160,11 @@ void eliminator() {
 ********************************************************************************/
 void print_contexts() {
    thread_t *start = head;
+   int element = 0;
    while (start) {
-      printf("tid: %d\n", start->tid);
+      printf("element: %d, tid: %d\n", element, start->tid);
       start = start->next;
+      element++;
    }
 }
 
@@ -170,7 +178,6 @@ int init() {
    // Get the main thread in
    spawn(NULL);
    head = end;
-   print_contexts();
    return 1;   // On success
 }
 
@@ -184,7 +191,6 @@ tid_t spawn(void (*start)()) {
    new_thread->state = ready;
    init_context0(&new_thread->ctx, start, &eliminator_ctx);
    add_to_ready_list(new_thread);
-   list_size++;
    printf("Current list after add:\n");
    print_contexts();
    return new_tid;

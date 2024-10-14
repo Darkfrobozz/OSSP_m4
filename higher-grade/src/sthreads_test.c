@@ -130,4 +130,5 @@ int main(){
   puts("\n==== Test program for the Simple Threads API ====\n");
 
   init(); // Initialization
+  puts("\n==== End of main ====\n");
 }
