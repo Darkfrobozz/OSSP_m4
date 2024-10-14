@@ -15,6 +15,7 @@
 #include <ucontext.h> /* ucontext_t, getcontext(), makecontext(),
                          setcontext(), swapcontext() */
 #include <stdbool.h>  /* true, false */
+#include <unistd.h>
 
 #include "sthreads.h"
 
@@ -29,8 +30,11 @@
 
 static thread_t *head = NULL;      // The thread that is in the firstmost position in the queue
 static thread_t *end = NULL;       // 
-static thread_t *eliminator = NULL;
-static thread_t *scheduler = NULL;
+static ucontext_t eliminator_ctx;
+static ucontext_t scheduler_ctx;
+static size_t list_size;
+static size_t term_amount;
+static int new_tid = 0;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 /*******************************************************************************
@@ -48,7 +52,12 @@ void add_to_ready_list(thread_t *thread) {
    thread->next = NULL;
    end->next = thread;
 }
-
+void move_to_back() {
+      end->next = head;
+      end = head;
+      head = head->next;
+      end->next = NULL;
+}
 // Move thread to back
 thread_t *shuffle_for_ready() {
    if(!head){                 // Handle cases when the ready list is empty (so program dont crash)
@@ -57,15 +66,12 @@ thread_t *shuffle_for_ready() {
    
    while (true)
    {
-      printf("Looking at %d", end->tid);
+      printf("Looking at %d\n", end->tid);
       sleep(2);
-      end->next = head;
-      end = head;
-      head = head->next;
-      end->next = NULL;
-      if(end->state == ready){
-         return end;
+      if(head->state == ready){
+         return head;
       }
+      move_to_back();
    }
 }
 
@@ -113,27 +119,85 @@ void init_context0(ucontext_t *ctx, void (*func)(), ucontext_t *next) {
 }
 
 void scheduler() {
-   printf("Looking for next ready");
-
+   while(true) {
+      printf("Looking for next ready\n");
+      if(list_size <= term_amount) {
+         exit(0);
+      }
+      thread_t *result = shuffle_for_ready();
+      result->state = running;
+      printf("Found thread, %d", result->tid);
+      if (swapcontext(&scheduler_ctx, &result->ctx) < 0 ) {
+         perror("swapcontext into work thread failed\n");
+         exit(EXIT_FAILURE);
+      }
+   }
 }
 
 void eliminator() {
-
+   while(true) {
+      head->state = terminated;
+      term_amount++;
+      printf("I killed a thread! %d\n", end->tid);
+      if (swapcontext(&eliminator_ctx, &scheduler_ctx) < 0) {
+         perror("swapcontext eliminator failed\n");
+         exit(EXIT_FAILURE);
+      }
+   }
 }
 
+
+/*******************************************************************************
+                             Print result
+
+                      Add internal helper functions here.
+********************************************************************************/
+void print_contexts() {
+   thread_t *start = head;
+   while (start) {
+      printf("tid: %d\n", start->tid);
+      start = start->next;
+   }
+}
 
 /*******************************************************************************
                     Implementation of the Simple Threads API
 ********************************************************************************/
 
 int init() {
-   
+   init_context0(&scheduler_ctx, scheduler, NULL); 
+   init_context0(&eliminator_ctx, eliminator, &scheduler_ctx); 
+   // Get the main thread in
+   spawn(NULL);
+   head = end;
+   print_contexts();
    return 1;   // On success
 }
 
-tid_t spawn(void (*start)()) { return -1; }
+tid_t spawn(void (*start)()) {
+   thread_t *new_thread = malloc(sizeof(thread_t));
+   if (new_thread == NULL) {
+      return -1;
+   }
+   new_thread->tid = new_tid;
+   new_tid++;
+   new_thread->state = ready;
+   init_context0(&new_thread->ctx, start, &eliminator_ctx);
+   add_to_ready_list(new_thread);
+   list_size++;
+   printf("Current list after add:\n");
+   print_contexts();
+   return new_tid;
+}
 
-void yield() {}
+void yield() {
+   head->state = ready;
+   move_to_back();
+   if(swapcontext(&end->ctx, &scheduler_ctx) > 0) {
+      perror("swapcontext eliminator failed\n");
+      exit(EXIT_FAILURE);
+   }
+}
 
 void done() {}
 
