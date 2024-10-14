@@ -38,7 +38,7 @@ static int new_tid = 0;
 static int sleep_time = 0;
 
 // set up array with indexes being tid
-static int tid_array_length;
+static int tid_array_length = 32;
 static thread_t **tid_arr;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
@@ -186,7 +186,7 @@ void eliminator() {
 ********************************************************************************/
 
 int init(void (*start)()) {
-   tid_arr = calloc(sizeof(thread_t), 32);
+   tid_arr = calloc(sizeof(thread_t *), 32);
    init_context0(&scheduler_ctx, scheduler, NULL); 
    init_context0(&eliminator_ctx, eliminator, &scheduler_ctx); 
    // Get the main thread in
@@ -204,12 +204,16 @@ tid_t spawn(void (*start)()) {
       return -1;
    }
    new_thread->tid = new_tid;
+   printf("%p\n", tid_arr);
+   printf("TID: %d\n", new_tid);
    // Adding to TID array
    if (new_tid >= tid_array_length) {
       tid_array_length = 2 * tid_array_length;
       tid_arr = realloc(tid_arr, tid_array_length);
    }
+   printf("Made it here!\n");
    tid_arr[new_tid] = new_thread;
+   printf("Made it here!\n");
    
    // Incrementing tid
    new_tid++;
