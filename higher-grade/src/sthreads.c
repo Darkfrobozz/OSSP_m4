@@ -29,6 +29,8 @@
 
 static thread_t *head = NULL;      // The thread that is in the firstmost position in the queue
 static thread_t *end = NULL;       // 
+static thread_t *eliminator = NULL;
+static thread_t *scheduler = NULL;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 /*******************************************************************************
@@ -36,6 +38,7 @@ static thread_t *end = NULL;       //
 
                       Add internal helper functions here.
 ********************************************************************************/
+
 
 // Function that adds a new thread (thread must already be created and non NULL) to the linked list of ready threads
 void add_to_ready_list(thread_t *thread) {
@@ -46,27 +49,76 @@ void add_to_ready_list(thread_t *thread) {
    end->next = thread;
 }
 
-// Function to remove (and return that) thread that is first in the ready list
-thread_t *remove_from_ready_list() {
+// Move thread to back
+thread_t *shuffle_for_ready() {
    if(!head){                 // Handle cases when the ready list is empty (so program dont crash)
       return NULL;
    }
-   thread_t *next_thread = head->next;
-   thread_t *current_head = head;
-   head = next_thread;        // Make it so that the current head, now instead is what was the next thread (that the old thread pointed twords)
    
    while (true)
    {
-      if(current_head->state == ready){
-      //Free?????
-      return current_head;
-      }
-      else{
-         current_head->next = NULL;
-         end->next = current_head;
+      printf("Looking at %d", end->tid);
+      sleep(2);
+      end->next = head;
+      end = head;
+      head = head->next;
+      end->next = NULL;
+      if(end->state == ready){
+         return end;
       }
    }
-   //return current_head;       // Return the thread that we removed from thread
+}
+
+/*******************************************************************************
+                             Contexts Management
+
+                      Add internal helper functions here.
+********************************************************************************/
+/* Initialize a context.
+
+   ctxt - context to initialize.
+
+   next - successor context to activate when ctx returns. If NULL, the thread
+          exits when ctx returns.
+ */
+void init_context(ucontext_t *ctx, ucontext_t *next) {
+  /* Allocate memory to be used as the stack for the context. */
+  void *stack = malloc(STACK_SIZE);
+
+  if (stack == NULL) {
+    perror("Allocating stack");
+    exit(EXIT_FAILURE);
+  }
+
+  if (getcontext(ctx) < 0) {
+    perror("getcontext");
+    exit(EXIT_FAILURE);
+  }
+
+  /* Before invoking makecontext(ctx), the caller must allocate a new stack for
+     this context and assign its address to ctx->uc_stack, and define a successor
+     context and assigns address to ctx->uc_link.
+  */
+
+  ctx->uc_link           = next;
+  ctx->uc_stack.ss_sp    = stack;
+  ctx->uc_stack.ss_size  = STACK_SIZE;
+  ctx->uc_stack.ss_flags = 0;
+}
+/* Initialize context ctx  with a call to function func with zero argument.
+ */
+void init_context0(ucontext_t *ctx, void (*func)(), ucontext_t *next) {
+  init_context(ctx, next);
+  makecontext(ctx, func, 0);
+}
+
+void scheduler() {
+   printf("Looking for next ready");
+
+}
+
+void eliminator() {
+
 }
 
 
@@ -74,11 +126,9 @@ thread_t *remove_from_ready_list() {
                     Implementation of the Simple Threads API
 ********************************************************************************/
 
-int init() { 
-
-   return -1;  // On fail
+int init() {
+   
    return 1;   // On success
-
 }
 
 tid_t spawn(void (*start)()) { return -1; }
