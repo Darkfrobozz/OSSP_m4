@@ -42,6 +42,9 @@ static int tid_array_length = 32;
 static thread_t **tid_arr;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
+// time slice
+static int seconds_q = 1;
+
 /*******************************************************************************
                              Print result
 
@@ -107,6 +110,18 @@ thread_t *shuffle_for_ready() {
    }
 }
 
+void switch_to_scheduler() {
+   move_to_back();
+   if(swapcontext(&end->ctx, &scheduler_ctx) > 0) {
+      perror("swapcontext eliminator failed\n");
+      exit(EXIT_FAILURE);
+   }
+}
+
+void yield_alarm() {
+   printf("%d got preempted\n", head->tid);
+   yield();
+}
 /*******************************************************************************
                              Contexts Management
 
@@ -151,6 +166,7 @@ void init_context0(ucontext_t *ctx, void (*func)(), ucontext_t *next) {
 }
 
 void scheduler() {
+   alarm(0);
    while(true) {
       if(list_size <= term_amount) {
          printf("No more threads in action\n");
@@ -160,6 +176,8 @@ void scheduler() {
       thread_t *result = shuffle_for_ready();
       result->state = running;
       printf("Found thread, %d\n", result->tid);
+      signal(SIGALRM, yield_alarm);
+      alarm(seconds_q);
       if (swapcontext(&scheduler_ctx, &result->ctx) < 0 ) {
          perror("swapcontext into work thread failed\n");
          exit(EXIT_FAILURE);
@@ -204,16 +222,12 @@ tid_t spawn(void (*start)()) {
       return -1;
    }
    new_thread->tid = new_tid;
-   printf("%p\n", tid_arr);
-   printf("TID: %d\n", new_tid);
    // Adding to TID array
    if (new_tid >= tid_array_length) {
       tid_array_length = 2 * tid_array_length;
       tid_arr = realloc(tid_arr, tid_array_length);
    }
-   printf("Made it here!\n");
    tid_arr[new_tid] = new_thread;
-   printf("Made it here!\n");
    
    // Incrementing tid
    new_tid++;
@@ -223,21 +237,14 @@ tid_t spawn(void (*start)()) {
    add_to_ready_list(new_thread);
    printf("Current list after add:\n");
    print_contexts();
-   return new_tid;
+   return new_thread->tid;
 }
-void switch_to_scheduler() {
-   move_to_back();
-   if(swapcontext(&end->ctx, &scheduler_ctx) > 0) {
-      perror("swapcontext eliminator failed\n");
-      exit(EXIT_FAILURE);
-   }
-}
+
 
 void yield() {
    head->state = ready;
    switch_to_scheduler();
 }
-
 void done() {
    setcontext(&eliminator_ctx);
 }

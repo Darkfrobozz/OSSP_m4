@@ -4,6 +4,7 @@
 #include <limits.h>   // INT_MAX
 
 #include "sthreads.h" // init(), spawn(), yield(), done()
+#include <unistd.h>
 
 /*******************************************************************************
                    Functions to be used together with spawn()
@@ -19,8 +20,8 @@ void numbers() {
     printf(" n = %d\n", n);
     n = (n + 1) % (INT_MAX);
     if (n > 3) done();
-    yield();
-  }
+    sleep(2);
+}
 }
 
 /* Prints the sequence a, b, c, ..., z over and over again.
