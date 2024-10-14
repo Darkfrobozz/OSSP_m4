@@ -21,6 +21,8 @@ void numbers() {
     n = (n + 1) % (INT_MAX);
     if (n > 3) done();
     sleep(2);
+    printf("I still want to sleep...\n");
+    sleep(1);
 }
 }
 
