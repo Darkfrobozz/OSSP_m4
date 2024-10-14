@@ -1,5 +1,5 @@
 #ifndef STHREADS_H
-#define STHREADS_H
+#define STHREADS_H 
 
 /* On Mac OS (aka OS X) the ucontext.h functions are deprecated and requires the
    following define.
