@@ -9,10 +9,12 @@
 #define SLEEP 1      // Number of seconds the pthread will sleep in each iteration.
 
 psem_t *sem;         // Semaphore used to synchronize the main thread and the pthread.
+int counter = 0;
 
 void *thread() {
   for (int i = 0; i < N; i++) {
     sleep(SLEEP);
+    counter++;
     psem_signal(sem);
   }
   pthread_exit(0);
@@ -20,7 +22,7 @@ void *thread() {
 
 int main(void) {
   pthread_t tid;
-  sem = psem_init(0);
+  sem = psem_init(3);
 
   if (pthread_create(&tid, NULL, thread, NULL) != 0) {
     perror("pthread_create()");
@@ -31,6 +33,7 @@ int main(void) {
     printf("  main(%d) waiting on a semaphore ...\n", i);
     psem_wait(sem);
     printf("  main(%d)     semaphore signaled by thread.\n", i);
+    printf("  main counter: %d\n", counter);
   }
 
   psem_destroy(sem);

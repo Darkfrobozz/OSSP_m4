@@ -25,7 +25,7 @@ ucontext_t foo_ctx, bar_ctx;
 
 /* Function executed by the foo context. */
 void foo() {
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < 10; i++) {
     printf("foo (%d)\n", i);
 
     /* Hand over control to the bar context */
@@ -117,7 +117,7 @@ int main() {
   /* Initialize contexts(). */
   init_context1(&foo_done_ctx, foo_done, "done", NULL);
   init_context0(&foo_ctx, foo, &foo_done_ctx);
-  init_context0(&bar_ctx, bar, NULL);
+  init_context0(&bar_ctx, bar, &foo_ctx);
 
   /* Transfers control to the foo context. */
   setcontext(&foo_ctx);
