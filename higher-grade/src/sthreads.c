@@ -43,7 +43,7 @@ static thread_t **tid_arr;
 //static tid_t next_tid = 0;                // Will be used when we need to create a new thread. So that all threads get different IDs
 
 // time slice
-static int seconds_q = 1;
+static int seconds_q = 2;
 
 /*******************************************************************************
                              Print result

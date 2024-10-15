@@ -20,8 +20,6 @@ void numbers() {
     printf(" n = %d\n", n);
     n = (n + 1) % (INT_MAX);
     if (n > 3) done();
-    sleep(2);
-    printf("I still want to sleep...\n");
     sleep(1);
 }
 }
@@ -94,10 +92,11 @@ void fibonacci_fast() {
     b = next;
     n++;
     if (a < 0) {
+      done();
       // Restart on overflow.
-      a = 0;
-      b = 1;
-      n = 0;
+      //a = 0;
+      //b = 1;
+      //n = 0;
     }
   }
 }
@@ -128,18 +127,41 @@ void magic_numbers() {
             Here you should add code to test the Simple Threads API.
 ********************************************************************************/
 
-void main_context() {
-  int a = spawn(numbers);
-  int b = spawn(letters);
-  join(a);
-  join(b);
-  puts("\n==== End of main ====\n");
+//Test to try out join to ensure that our main thread waits
+void test_basic_thread_execution() {
+  int tid1 = spawn(numbers);
+  int tid2 = spawn(letters);
+  join(tid1);
+  join(tid2);
+  puts("\n==== Test Completed (after threads are done) ====\n");
 }
+
+// Test for just running one thread (besides main)
+void test_basic_thread(){
+  spawn(numbers);
+  puts("\n==== Test function Completed (before numbers are done) ====\n");
+}
+
+//Shows numbers getting preemptive
+void test_preemptive_show(){
+  spawn(numbers);
+  spawn(fibonacci_fast);
+  puts("\n==== Test function Completed (before threads are done) ====\n");
+}
+
+//Shows when fib gets large (and slow) that it gets preemptive a lot of time while trying to solve just one number
+void test_preemptive_show_many(){
+  spawn(fibonacci_slow);
+  puts("\n==== Test function Completed (before threads are done) ====\n");
+}
+
 
 int main(){
   puts("\n==== Test program for the Simple Threads API ====\n");
-
-  init(main_context); // Initialization
-  perror("Wrong place");
+  //init(test_preemptive_show_clearly);
+  //init(test_preemptive_show);
+  //init(test_basic_thread_execution); // Initialization
+  //init(test_basic_thread);
+  perror("Wrong place");    // We should not be able to reach this place
 }
 
