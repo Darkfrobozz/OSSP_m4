@@ -129,6 +129,7 @@ void magic_numbers() {
 
 //Test to try out join to ensure that our main thread waits
 void test_basic_thread_execution() {
+  puts("\n==== Show that join works Test ====\n");
   int tid1 = spawn(numbers);
   int tid2 = spawn(letters);
   join(tid1);
@@ -138,12 +139,14 @@ void test_basic_thread_execution() {
 
 // Test for just running one thread (besides main)
 void test_basic_thread(){
+  puts("\n==== Very Basic Test ====\n");
   spawn(numbers);
   puts("\n==== Test function Completed (before numbers are done) ====\n");
 }
 
 //Shows numbers getting preemptive
 void test_preemptive_show(){
+  puts("\n==== Preemptive between 2 threads Test ====\n");
   spawn(numbers);
   spawn(fibonacci_fast);
   puts("\n==== Test function Completed (before threads are done) ====\n");
@@ -151,8 +154,24 @@ void test_preemptive_show(){
 
 //Shows when fib gets large (and slow) that it gets preemptive a lot of time while trying to solve just one number
 void test_preemptive_show_many(){
+  puts("\n==== Clear Preemptive Test ====\n");
   spawn(fibonacci_slow);
   puts("\n==== Test function Completed (before threads are done) ====\n");
+}
+
+// Ensures that join returns immediately
+void test_multiple_joins() {
+  puts("\n==== Multiple Joins Test ====\n");
+  int tid = spawn(numbers);
+  int join1 = join(tid);
+  int join2 = join(tid);  // Should return immediately since the thread is already terminated
+
+  if (join1 == tid && join2 == tid) {
+    printf("Both joins returned the correct thread ID: %d\n", tid);
+  } else {
+    printf("Join failed. Expected %d, got %d and %d\n", tid, join1, join2);
+  }
+  puts("\n==== Test Completed (after numbers finished)====\n");
 }
 
 
@@ -162,6 +181,7 @@ int main(){
   //init(test_preemptive_show);
   //init(test_basic_thread_execution); // Initialization
   //init(test_basic_thread);
-  perror("Wrong place");    // We should not be able to reach this place
+  //init(test_multiple_joins);
+  perror("Wrong place");    // We should not be able to reach this place if we have used "init"
 }
 
